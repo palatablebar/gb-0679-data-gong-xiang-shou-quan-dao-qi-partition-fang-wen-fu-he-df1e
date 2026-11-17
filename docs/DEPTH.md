@@ -12,7 +12,8 @@
 | M4 冲突裁决 | 查看并运行冲突裁决 | `/api/conflicts` | `app/modules/m4_conflicts/rules.py` | `tests/test_m4.py` |
 | M5 分区判定 | 查看并运行分区判定 | `/api/partitions` | `app/modules/m5_partitions/rules.py` | `tests/test_m5.py` |
 | M6 访问对账 | 查看并运行访问对账 | `/api/audit` | `app/modules/m6_audit/rules.py` | `tests/test_m6.py` |
-| M7 审计归档 | 查看并运行审计归档 | `/api/seals` | `app/modules/m7_seals/rules.py` | `tests/test_m7.py` |
+| M7 覆盖结论 | 查看并运行覆盖结论 | `/api/coverage` | `app/modules/m7_coverage/rules.py` | `tests/test_m7.py` |
+| M8 审计归档 | 查看并运行审计归档 | `/api/seals` | `app/modules/m8_seals/rules.py` | `tests/test_m8.py` |
 
 ## 陷阱登记
 
@@ -29,6 +30,16 @@
 | TRAP-07 | 上游结果空值 | 误报拒绝 | 隔离缺失 | `app/values.py` | `tests/test_m3.py::test_real_missing_decision_not_zero` |
 | TRAP-19 | 允许与拒绝重叠 | 后写覆盖 | 拒绝优先且排序证据 | `app/modules/m4_conflicts/rules.py` | `tests/test_m4.py::test_deny_priority_counterexample` |
 | TRAP-23 | 授权到期点 | 多放行一次 | 半开生效窗 | `app/modules/m3_grants/rules.py` | `tests/test_m3.py::test_expiry_endpoint_excluded` |
+| TRAP-31 | 别名登记授权 | 拒绝静默失配，访问显示持续受权 | 授权入算前归并别名，未知资源拒绝登记 | `app/modules/m3_grants/rules.py` | `tests/test_m3.py::test_alias_deny_not_silently_inert` |
+| TRAP-32 | 跨月拒绝两视图分歧 | 按月扩成整月或重复计 | 连续区间权威，按月只裁剪投影 | `app/modules/m7_coverage/rules.py` | `tests/test_m7.py::test_cross_month_deny_projection` |
+| TRAP-33 | 空档内无访问 | 整段空档不可见 | 按复查范围扫段，空档三态入结论 | `app/modules/m7_coverage/rules.py` | `tests/test_m7.py::test_gap_visible_without_access_inside` |
+| TRAP-34 | 重跑同一输入 | 覆盖版本膨胀 | 结论内容寻址，INSERT OR IGNORE | `app/store.py` | `tests/test_m7.py::test_same_input_adds_no_coverage_version` |
+| TRAP-35 | 切换覆盖版本失败 | 旧版证据被覆盖 | 版本条件更新，冲突保留旧版 | `app/store.py` | `tests/test_m7.py::test_switch_stale_keeps_old_evidence` |
+| TRAP-36 | 封存依据断开 | 按陈旧行状态归档 | 封存只接受覆盖结论并逐行复核 | `app/modules/m8_seals/rules.py` | `tests/test_m8.py::test_seal_rejects_detached_row` |
+
+## 覆盖结论
+
+覆盖结论按（主体，规范资源，分区）给出复查范围内的三态覆盖：allow 覆盖内、deny 显式拒绝、gap 覆盖空档（无任何授权的默认拒绝）。连续有效区间为权威结论；按月展开是同一区间在自然月边界上的裁剪投影，跨月拒绝不扩整月、不重复计，两种视图由构造保证一致。资源别名在访问采信（M2）与授权定版（M3）两侧都先归并再计算，结论中不出现别名。落入空档或显式拒绝的越权放行逐条链接到所在区间与规则证据。结论内容寻址得到coverage_id，同源重跑不新增版本；切换生效版本需携带当前版本号，冲突返回409且旧版证据保留。封存（M8）只接受这份结论：缺少结论或任何一行与结论矛盾都拒绝归档。
 
 ## 对账规则
 

@@ -1,13 +1,17 @@
 from app.values import instant,number
 from app.reasons import reject
 from app.errors import DomainError
+from app.modules.m2_resources.rules import RESOURCES
 GRANTS=[{"id":"G-01","principal":"analyst","resource":"orders","start":"2026-11-01T00:00:00Z","end":"2026-12-01T00:00:00Z","from_partition":"2026-01","to_partition":"2026-12","effect":"allow"},{"id":"G-02","principal":"analyst","resource":"orders","start":"2026-11-10T00:00:00Z","end":"2026-11-20T00:00:00Z","from_partition":"2026-10","to_partition":"2026-11","effect":"deny"},{"id":"G-03","principal":"auditor","resource":"customers","start":"2026-11-01T00:00:00Z","end":"2026-12-01T00:00:00Z","from_partition":"2026-01","to_partition":"2026-12","effect":"allow"}]
 def validate_grants(grants):
-    ids=set()
+    "授权在进入任何匹配与覆盖计算之前归并资源别名；未知资源拒绝登记。"
+    ids=set();canonical=[]
     for g in grants:
+        resource=RESOURCES.get(g.get("resource"))
+        if resource is None:raise DomainError("BAD_GRANT","授权资源未登记")
         if g["id"] in ids or instant(g["start"])>=instant(g["end"]) or g["effect"] not in {"allow","deny"} or g["from_partition"]>=g["to_partition"]:raise DomainError("BAD_GRANT","授权版本无效")
-        ids.add(g["id"])
-    return grants
+        ids.add(g["id"]);canonical.append({**g,"resource":resource})
+    return canonical
 def evaluate(rows,context):
     grants=validate_grants(context.get("parameters",{}).get("grants",GRANTS));good=[];bad=[]
     for row in rows:

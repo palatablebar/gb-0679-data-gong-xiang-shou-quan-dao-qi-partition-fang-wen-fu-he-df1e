@@ -19,11 +19,12 @@ docker compose exec -T app pytest -q
 - 4. 冲突裁决：`/conflicts`，`/api/conflicts`。
 - 5. 分区判定：`/partitions`，`/api/partitions`。
 - 6. 访问对账：`/audit`，`/api/audit`。
-- 7. 审计归档：`/seals`，`/api/seals`。
+- 7. 覆盖结论：`/coverage`，`/api/coverage`。
+- 8. 审计归档：`/seals`，`/api/seals`。
 
 ## 核心规则
 
-拒绝规则优先于允许，授权必须同时命中资源、分区和生效窗；显式拒绝不得被宽授权覆盖。
+拒绝规则优先于允许，授权必须同时命中资源、分区和生效窗；显式拒绝不得被宽授权覆盖。覆盖结论按主体、资源、分区给出复查范围内的连续有效区间，按月展开只是其投影；资源别名先归并再计算，落入空档的越权访问逐条接证据，封存只接受这份结论。
 
 ## 演示
 

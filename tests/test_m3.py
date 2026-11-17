@@ -15,3 +15,10 @@ def test_invalid_rule_window():
     with pytest.raises(DomainError):validate_grants([{**GRANTS[0],"end":GRANTS[0]["start"]}])
 def test_duplicate_grant_id():
     with pytest.raises(DomainError):validate_grants([GRANTS[0],GRANTS[0]])
+def test_grant_alias_canonicalized(): assert validate_grants([{**GRANTS[0],"resource":"订单"}])[0]["resource"]=="orders"
+def test_grant_unknown_resource_rejected():
+    with pytest.raises(DomainError):validate_grants([{**GRANTS[0],"resource":"unknown"}])
+def test_alias_deny_not_silently_inert():
+    "TRAP-31 别名登记的拒绝必须命中规范资源"
+    grants=[{**GRANTS[0],"id":"G-9","resource":"订单","effect":"deny","from_partition":"2026-01","to_partition":"2026-12"}]
+    assert evaluate([access("2026-11-16T00:00:00Z")],{"parameters":{"grants":grants}})["rows"][0]["candidates"][0]["effect"]=="deny"
